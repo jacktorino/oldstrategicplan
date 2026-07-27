@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Kpi extends Model
 {
     protected $fillable = [
+        'strategic_plan_id',
         'sub_kra_id',
         'title',
         'description',
@@ -16,12 +17,17 @@ class Kpi extends Model
         'remarks',
         'proposed_by',
         'approved_by',
-        'approved_at'
+        'approved_at',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
     ];
+
+    public function strategicPlan()
+    {
+        return $this->belongsTo(StrategicPlan::class);
+    }
 
     public function subKra()
     {

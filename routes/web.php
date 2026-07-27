@@ -36,11 +36,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::resource('strategic-plans', StrategicPlanController::class);
+    Route::resource('strategic-plans', StrategicPlanController::class)->except(['index', 'show']);
     Route::resource('users', UserController::class);
-    Route::resource('kra', KraController::class);
-    Route::resource('subkra', SubKraController::class);
-    Route::resource('kpi', KpiController::class);
+    Route::resource('kra', KraController::class)->except(['index', 'show']);
+    Route::resource('subkra', SubKraController::class)->except(['index', 'show']);
+    Route::resource('kpi', KpiController::class)->except(['index', 'show']);
 
     // Action plans are managed inline from the KPI show page, so only the
     // mutating actions are exposed (no index/create/edit views for this).
@@ -50,6 +50,23 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // NOTE: progress.store/update/destroy are intentionally NOT re-registered
     // here — they're defined below under a shared group so both admin and
     // key_result_area can hit the same route names (see that group's note).
+});
+
+// Admin + Viewer read-only routes
+//
+// Viewer sees the exact same index/show data as admin, just without any
+// mutating actions. Split out from the admin group above (rather than
+// registering a viewer-prefixed group like key-result-area does) because
+// these resources need no per-user scoping — viewer just needs read access
+// to the same list/detail views admin gets. Registering these under the
+// admin role group instead would mean the admin group's full resource
+// routes always match GET /kpi, /kra, etc. first, shadowing anything
+// registered afterward for role:viewer at the same URI.
+Route::middleware(['auth', 'role:admin,viewer'])->group(function () {
+    Route::resource('strategic-plans', StrategicPlanController::class)->only(['index', 'show']);
+    Route::resource('kra', KraController::class)->only(['index', 'show']);
+    Route::resource('subkra', SubKraController::class)->only(['index', 'show']);
+    Route::resource('kpi', KpiController::class)->only(['index', 'show']);
 });
 
 // Strategic Planner Routes
@@ -107,6 +124,12 @@ Route::middleware(['auth', 'role:admin,key_result_area'])->group(function () {
 });
 
 // Viewer Routes
+//
+// Read-only oversight role. Its index/show access to strategic-plans, kra,
+// subkra, and kpi is registered above in the shared 'role:admin,viewer'
+// group (same controllers, same views as admin — just no write verbs). This
+// group is for anything that ends up being viewer-only and doesn't belong
+// under the shared group above.
 Route::middleware(['auth', 'role:viewer'])->group(function () {
     //
 });

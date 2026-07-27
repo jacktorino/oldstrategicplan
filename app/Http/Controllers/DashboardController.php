@@ -17,19 +17,27 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         return match ($request->user()->role) {
-            'admin' => $this->adminDashboard(),
+            'admin' => Inertia::render('Dashboard/Admin', $this->overviewStats()),
 
             'strategic_planner' => Inertia::render('Dashboard/PlanningOfficer'),
 
             'key_result_area' => Inertia::render('Dashboard/ResponsibleUnit'),
 
-            'viewer' => Inertia::render('Dashboard/Viewer'),
+            // Viewer gets the same overview data as admin (see routes/web.php
+            // and menus.tsx — viewer mirrors admin's read-only views), just
+            // rendered to its own page component with no edit/delete controls.
+            'viewer' => Inertia::render('Dashboard/Viewer', $this->overviewStats()),
         };
     }
 
-    private function adminDashboard(): Response
+    /**
+     * Shared stats payload for the admin and viewer dashboards. Kept as one
+     * method (rather than duplicating the four DB calls per role) so the
+     * two dashboards can't drift out of sync.
+     */
+    private function overviewStats(): array
     {
-        return Inertia::render('Dashboard/Admin', [
+        return [
             'stats' => [
                 'strategicPlans' => StrategicPlan::count(),
                 'kras' => Kra::count(),
@@ -39,7 +47,7 @@ class DashboardController extends Controller
             'kpiStatusBreakdown' => $this->kpiStatusBreakdown(),
             'kraBreakdown' => $this->kraBreakdown(),
             'monthlyProgress' => $this->monthlyProgress(),
-        ]);
+        ];
     }
 
     /**
@@ -63,7 +71,7 @@ class DashboardController extends Controller
         ];
 
         return collect($statusMap)
-            ->map(fn (string $frontendKey, string $dbLabel) => [
+            ->map(fn(string $frontendKey, string $dbLabel) => [
                 'status' => $frontendKey,
                 'count' => (int) ($counts[$dbLabel] ?? 0),
             ])
@@ -89,7 +97,7 @@ class DashboardController extends Controller
             ->groupBy('kras.id', 'kras.number', 'kras.title')
             ->orderBy('kras.number')
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'kra' => 'KRA ' . $row->number,
                 'total' => (int) $row->total,
                 'completed' => (int) $row->completed,
@@ -113,7 +121,7 @@ class DashboardController extends Controller
             ->orderBy('year')
             ->orderBy('month')
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'month' => Carbon::createFromDate((int) $row->year, (int) $row->month, 1)
                     ->format('M Y'),
                 'accomplishment' => round((float) $row->avg_percentage, 1),

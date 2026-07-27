@@ -1,8 +1,15 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -23,8 +30,16 @@ interface KpiRow {
     responsible_units: { id: number; name: string; acronym: string | null }[];
 }
 
+interface StrategicPlan {
+    id: number;
+    school_year: string;
+    status: string;
+}
+
 interface Props {
     kpis: KpiRow[];
+    strategicPlans: StrategicPlan[];
+    selectedStrategicPlanId: number | null;
 }
 
 const STATUS_VARIANT: Record<
@@ -37,7 +52,19 @@ const STATUS_VARIANT: Record<
     Completed: 'outline',
 };
 
-export default function KeyResultAreaKpiIndex({ kpis }: Props) {
+export default function KeyResultAreaKpiIndex({
+    kpis,
+    strategicPlans,
+    selectedStrategicPlanId,
+}: Props) {
+    const handleAcademicYearChange = (value: string) => {
+        router.get(
+            '/key-result-area/kpi',
+            { strategic_plan_id: value },
+            { preserveState: true, replace: true },
+        );
+    };
+
     return (
         <>
             <Head title="My KPIs" />
@@ -53,12 +80,34 @@ export default function KeyResultAreaKpiIndex({ kpis }: Props) {
                         </p>
                     </div>
 
-                    <Button asChild>
-                        <Link href="/key-result-area/kpi/create">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Propose a KPI
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Select
+                            value={selectedStrategicPlanId?.toString() ?? ''}
+                            onValueChange={handleAcademicYearChange}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Academic year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {strategicPlans.map((plan) => (
+                                    <SelectItem
+                                        key={plan.id}
+                                        value={plan.id.toString()}
+                                    >
+                                        {plan.school_year}
+                                        {plan.status === 'Active' && ' (Active)'}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Button asChild>
+                            <Link href="/key-result-area/kpi/create">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Propose a KPI
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="rounded-md border">
@@ -81,7 +130,8 @@ export default function KeyResultAreaKpiIndex({ kpis }: Props) {
                                         colSpan={5}
                                         className="py-8 text-center text-muted-foreground"
                                     >
-                                        No KPIs yet. Propose your first one.
+                                        No KPIs yet for this academic year.
+                                        Propose your first one.
                                     </TableCell>
                                 </TableRow>
                             ) : (

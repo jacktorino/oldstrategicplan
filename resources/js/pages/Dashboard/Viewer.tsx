@@ -20,7 +20,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import { Target, KeyRound, ClipboardCheck, SquarePen } from 'lucide-react';
+import { Target, KeyRound, ClipboardCheck, Users } from 'lucide-react';
 
 interface KpiStatusSlice {
     status: 'approved' | 'pending' | 'rejected' | 'completed';
@@ -43,7 +43,7 @@ interface ViewerProps {
         strategicPlans: number;
         kras: number;
         kpis: number;
-        actionPlans: number;
+        users: number;
     };
     kpiStatusBreakdown?: KpiStatusSlice[];
     kraBreakdown?: KraBreakdownItem[];
@@ -70,7 +70,7 @@ const AXIS_STYLE = {
 };
 
 export default function Viewer({
-    stats = { strategicPlans: 0, kras: 0, kpis: 0, actionPlans: 0 },
+    stats = { strategicPlans: 0, kras: 0, kpis: 0, users: 0 },
     kpiStatusBreakdown = [],
     kraBreakdown = [],
     monthlyProgress = [],
@@ -84,7 +84,7 @@ export default function Viewer({
         { label: 'Strategic Plans', value: stats.strategicPlans, icon: Target },
         { label: 'Key Result Areas', value: stats.kras, icon: ClipboardCheck },
         { label: 'KPIs', value: stats.kpis, icon: KeyRound },
-        { label: 'Action Plans', value: stats.actionPlans, icon: SquarePen },
+        { label: 'Users', value: stats.users, icon: Users },
     ];
 
     return (

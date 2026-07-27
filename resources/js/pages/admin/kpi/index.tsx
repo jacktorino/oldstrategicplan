@@ -27,6 +27,13 @@ interface SubKraOption {
     kra: { id: number; number: string };
 }
 
+interface StrategicPlanOption {
+    id: number;
+    title: string;
+    school_year: string;
+    status?: string;
+}
+
 interface KpiRow {
     id: number;
     title: string;
@@ -42,7 +49,8 @@ interface KpiRow {
 interface Props {
     kpis: KpiRow[];
     subKras: SubKraOption[];
-    filters: { sub_kra_id?: string };
+    strategicPlans: StrategicPlanOption[];
+    filters: { sub_kra_id?: string; strategic_plan_id?: string };
 }
 
 const STATUS_VARIANT: Record<
@@ -68,15 +76,39 @@ KpiIndex.layout = {
     ],
 };
 
-export default function KpiIndex({ kpis, subKras, filters }: Props) {
+export default function KpiIndex({
+    kpis,
+    subKras,
+    strategicPlans,
+    filters,
+}: Props) {
     const selectedSubKraId = filters.sub_kra_id ?? 'all';
+    const selectedStrategicPlanId = filters.strategic_plan_id ?? '';
 
-    function handleFilterChange(value: string) {
-        router.get('/kpi', value === 'all' ? {} : { sub_kra_id: value }, {
+    function handleFilterChange(
+        key: 'sub_kra_id' | 'strategic_plan_id',
+        value: string,
+    ) {
+        const params: Record<string, string> = {};
+
+        if (key === 'sub_kra_id') {
+            if (value !== 'all') params.sub_kra_id = value;
+            if (selectedStrategicPlanId) {
+                params.strategic_plan_id = selectedStrategicPlanId;
+            }
+        } else {
+            params.strategic_plan_id = value;
+            if (selectedSubKraId !== 'all') {
+                params.sub_kra_id = selectedSubKraId;
+            }
+        }
+
+        router.get('/kpi', params, {
             preserveState: true,
             replace: true,
         });
     }
+
     function handleDelete(kpi: KpiRow) {
         if (
             !confirm(
@@ -115,11 +147,25 @@ export default function KpiIndex({ kpis, subKras, filters }: Props) {
 
                         <Button asChild>
                             <Link
-                                href={
-                                    selectedSubKraId !== 'all'
-                                        ? `/kpi/create?sub_kra_id=${selectedSubKraId}`
-                                        : '/kpi/create'
-                                }
+                                href={(() => {
+                                    const params = new URLSearchParams();
+                                    if (selectedSubKraId !== 'all') {
+                                        params.set(
+                                            'sub_kra_id',
+                                            selectedSubKraId,
+                                        );
+                                    }
+                                    if (selectedStrategicPlanId) {
+                                        params.set(
+                                            'strategic_plan_id',
+                                            selectedStrategicPlanId,
+                                        );
+                                    }
+                                    const qs = params.toString();
+                                    return qs
+                                        ? `/kpi/create?${qs}`
+                                        : '/kpi/create';
+                                })()}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add KPI
@@ -128,26 +174,66 @@ export default function KpiIndex({ kpis, subKras, filters }: Props) {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                        Filter by Sub KRA:
-                    </span>
-                    <Select
-                        value={selectedSubKraId}
-                        onValueChange={handleFilterChange}
-                    >
-                        <SelectTrigger className="w-72">
-                            <SelectValue placeholder="All Sub KRAs" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Sub KRAs</SelectItem>
-                            {subKras.map((sub) => (
-                                <SelectItem key={sub.id} value={String(sub.id)}>
-                                    {sub.code} — {sub.title}
+                <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                            Academic year:
+                        </span>
+                        <Select
+                            value={selectedStrategicPlanId}
+                            onValueChange={(value) =>
+                                handleFilterChange(
+                                    'strategic_plan_id',
+                                    value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="w-56">
+                                <SelectValue placeholder="Select academic year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {strategicPlans.map((plan) => (
+                                    <SelectItem
+                                        key={plan.id}
+                                        value={String(plan.id)}
+                                    >
+                                        {plan.school_year}
+                                        {plan.status === 'Active' &&
+                                            ' (Active)'}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                            Filter by Sub KRA:
+                        </span>
+                        <Select
+                            value={selectedSubKraId}
+                            onValueChange={(value) =>
+                                handleFilterChange('sub_kra_id', value)
+                            }
+                        >
+                            <SelectTrigger className="w-72">
+                                <SelectValue placeholder="All Sub KRAs" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">
+                                    All Sub KRAs
                                 </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                {subKras.map((sub) => (
+                                    <SelectItem
+                                        key={sub.id}
+                                        value={String(sub.id)}
+                                    >
+                                        {sub.code} — {sub.title}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 <div className="rounded-md border">

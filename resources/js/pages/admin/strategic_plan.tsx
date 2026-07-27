@@ -158,7 +158,7 @@ export default function StrategicPlan({ plans = [] }: Props) {
                                     <Label htmlFor="title">Title</Label>
                                     <Input
                                         id="title"
-                                        placeholder="Strategic Plan 2026–2030"
+                                        placeholder="Strategic Plan 2026–2027"
                                         value={createForm.data.title}
                                         onChange={(e) =>
                                             createForm.setData(

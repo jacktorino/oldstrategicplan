@@ -5,6 +5,7 @@ namespace App\Http\Controllers\KeyResultArea;
 use App\Http\Controllers\Controller;
 use App\Models\Kpi;
 use App\Models\ResponsibleUnit;
+use App\Models\StrategicPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,19 +15,34 @@ class KpiController extends Controller
 {
     /**
      * "My KPIs" — scoped to the KRA user's own sub_kra_id, never the whole table.
+     *
+     * Also scoped to a single strategic plan (academic year), since the same
+     * KPI code now has one row per plan. Defaults to the Active plan when
+     * no academic year is selected.
      */
     public function index(Request $request): Response
     {
         $user = $this->authorizedUser($request);
 
+        $strategicPlans = StrategicPlan::orderByDesc('school_year')
+            ->get(['id', 'school_year', 'status']);
+
+        $selectedStrategicPlanId = $this->resolveSelectedStrategicPlan(
+            $request,
+            $strategicPlans
+        );
+
         $kpis = Kpi::with('responsibleUnits')
             ->withCount('progress')
             ->where('sub_kra_id', $user->sub_kra_id)
+            ->where('strategic_plan_id', $selectedStrategicPlanId)
             ->latest()
             ->get();
 
         return Inertia::render('key-result-area/kpi/index', [
             'kpis' => $kpis,
+            'strategicPlans' => $strategicPlans,
+            'selectedStrategicPlanId' => $selectedStrategicPlanId,
         ]);
     }
 
@@ -43,9 +59,23 @@ class KpiController extends Controller
      * Proposing a KPI always lands as Pending against the user's own sub_kra —
      * neither of those fields is accepted from the request.
      */
+    /**
+     * Proposing a KPI always lands as Pending against the user's own sub_kra
+     * and the currently active strategic plan — neither is accepted from
+     * the request. KRA users can browse past academic years via the index
+     * filter, but new proposals only ever attach to the active one.
+     */
     public function store(Request $request): RedirectResponse
     {
         $user = $this->authorizedUser($request);
+
+        $activeStrategicPlan = StrategicPlan::where('status', 'Active')->first();
+
+        abort_unless(
+            $activeStrategicPlan,
+            422,
+            'There is no active strategic plan to propose a KPI against.'
+        );
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -61,13 +91,14 @@ class KpiController extends Controller
         unset($validated['responsible_unit_ids']);
 
         $validated['sub_kra_id'] = $user->sub_kra_id;
+        $validated['strategic_plan_id'] = $activeStrategicPlan->id;
         $validated['status'] = 'Pending';
         $validated['proposed_by'] = $user->id;
 
         $kpi = Kpi::create($validated);
         $kpi->responsibleUnits()->sync($responsibleUnitIds);
 
-        return to_route('key-result-area.kpi.index')
+        return to_route('key-result-area.kpi.index', ['strategic_plan_id' => $activeStrategicPlan->id])
             ->with('success', 'KPI proposed. It is now pending approval.');
     }
 
@@ -151,5 +182,23 @@ class KpiController extends Controller
         abort_unless($user->sub_kra_id, 403, 'Your account is not yet assigned to a Sub KRA. Contact an administrator.');
 
         return $user;
+    }
+
+    /**
+     * Resolve which strategic plan (academic year) the index should be
+     * scoped to: whatever was requested, if it's a real plan, otherwise
+     * the Active plan, otherwise the most recent plan.
+     */
+    protected function resolveSelectedStrategicPlan(Request $request, $strategicPlans): ?int
+    {
+        $requested = $request->integer('strategic_plan_id');
+
+        if ($requested && $strategicPlans->contains('id', $requested)) {
+            return $requested;
+        }
+
+        $active = $strategicPlans->firstWhere('status', 'Active');
+
+        return $active->id ?? $strategicPlans->first()->id ?? null;
     }
 }

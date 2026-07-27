@@ -94,11 +94,31 @@ export const menus: Record<
         },
     ],
 
-    viewer: [
+     viewer: [
         {
             title: 'Dashboard',
             href: '/dashboard',
             icon: LayoutDashboard,
+        },
+        {
+            title: 'Strategic Plans',
+            href: '/strategic-plans',
+            icon: Target,
+        },
+        {
+            title: 'Key Results Area',
+            href: '/kra',
+            icon: Target,
+        },
+        {
+            title: 'SUBKRA',
+            href: '/subkra',
+            icon: Target,
+        },
+        {
+            title: 'KPI',
+            href: '/kpi',
+            icon: Target,
         },
         {
             title: 'Reports',

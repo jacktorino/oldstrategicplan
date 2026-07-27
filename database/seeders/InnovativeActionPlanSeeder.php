@@ -363,20 +363,25 @@ class InnovativeActionPlanSeeder extends Seeder
 
         foreach ($this->actionPlans as $code => $titles) {
             // IMPORTANT: 'description' is where the KPI code (e.g. '1.1.1')
-            // is stored, so we match against it directly.
-            $kpi = Kpi::where('description', $code)->first();
+            // is stored. Because the same KPI code now exists once per
+            // strategic plan (2023-2024, 2024-2025, 2025-2026, 2026-2027),
+            // this can match multiple rows — attach the action plans to
+            // every one of them, not just the first match.
+            $kpis = Kpi::where('description', $code)->get();
 
-            if (! $kpi) {
+            if ($kpis->isEmpty()) {
                 $this->command->warn("KPI Code {$code} not found in database.");
                 continue;
             }
 
-            foreach ($titles as $title) {
-                InnovativeActionPlan::firstOrCreate([
-                    'kpi_id' => $kpi->id,
-                    'title' => $title,
-                ]);
-                $created++;
+            foreach ($kpis as $kpi) {
+                foreach ($titles as $title) {
+                    InnovativeActionPlan::firstOrCreate([
+                        'kpi_id' => $kpi->id,
+                        'title' => $title,
+                    ]);
+                    $created++;
+                }
             }
         }
 

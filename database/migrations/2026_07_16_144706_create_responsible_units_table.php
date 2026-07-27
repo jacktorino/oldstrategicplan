@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-      Schema::create('responsible_units', function (Blueprint $table) {
-    $table->id();
+        Schema::create('responsible_units', function (Blueprint $table) {
+            $table->id();
 
-    $table->string('name');
-    $table->string('acronym')->nullable();
+            $table->string('name');
+            $table->string('acronym')->nullable();
+            $table->string('category')->nullable();
 
-    $table->timestamps();
-});
+            $table->timestamps();
+        });
     }
 
     /**

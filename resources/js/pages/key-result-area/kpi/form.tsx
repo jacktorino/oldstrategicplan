@@ -98,7 +98,22 @@ export default function KeyResultAreaKpiForm({
                 <Card>
                     <CardContent className="space-y-4 pt-6">
                         <form onSubmit={handleSubmit} className="space-y-4">
-
+                <div className="space-y-2">
+                                <Label htmlFor="description">
+                                    Code
+                                </Label>
+                                <Input
+                                    id="description"
+                                    value={data.description}
+                                    placeholder="e.g. 1.1.1"
+                                    onChange={(e) =>
+                                        setData(
+                                            'description',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="title">Title</Label>
                                 <Input
@@ -116,22 +131,7 @@ export default function KeyResultAreaKpiForm({
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="description">
-                                    Description
-                                </Label>
-                                <Textarea
-                                    id="description"
-                                    rows={3}
-                                    value={data.description}
-                                    onChange={(e) =>
-                                        setData(
-                                            'description',
-                                            e.target.value,
-                                        )
-                                    }
-                                />
-                            </div>
+            
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
@@ -211,6 +211,7 @@ export default function KeyResultAreaKpiForm({
                                         </label>
                                     ))}
                                 </div>
+
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
